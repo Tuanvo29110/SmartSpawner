@@ -46,7 +46,6 @@ public class HopperTransfer {
     }
 
     private void transferItems(Location hopperLoc, Location spawnerLoc) {
-
         SpawnerData spawner = spawnerManager.getSpawnerByLocation(spawnerLoc);
         if (spawner == null) return;
 
@@ -70,17 +69,82 @@ public class HopperTransfer {
             if (transferred >= maxTransfers) break;
             if (item == null || item.getType() == Material.AIR) continue;
 
-            HashMap<Integer, ItemStack> leftovers = hopperInv.addItem(item.clone());
+            int stackAmount = item.getAmount();
+            int maxStackSize = item.getMaxStackSize();
 
-            if (leftovers.isEmpty()) {
-                removed.add(item.clone());
-                transferred++;
-            }
+            int availableSpace = getAvailableSpace(hopperInv, item);
+            if (availableSpace <= 0) continue;
+
+            int toMove = Math.min(stackAmount, availableSpace);
+
+            addAmountToInventory(hopperInv, item, toMove);
+
+            ItemStack removeStack = item.clone();
+            removeStack.setAmount(toMove);
+
+            removed.add(removeStack);
+            transferred++;
         }
 
         if (!removed.isEmpty()) {
             spawner.removeItemsAndUpdateSellValue(removed);
             guiManager.updateSpawnerMenuViewers(spawner);
+        }
+    }
+
+    private int getAvailableSpace(Inventory inventory, ItemStack target) {
+        int maxStackSize = target.getMaxStackSize();
+        int space = 0;
+
+        for (ItemStack item : inventory.getStorageContents()) {
+            if (item == null || item.getType() == Material.AIR) {
+                space += maxStackSize;
+                continue;
+            }
+
+            if (item.isSimilar(target)) {
+                space += Math.max(maxStackSize - item.getAmount(), 0);
+            }
+        }
+
+        return space;
+    }
+
+    private void addAmountToInventory(Inventory inventory, ItemStack target, int amount) {
+        int maxStackSize = target.getMaxStackSize();
+
+        // merge first
+        for (ItemStack item : inventory.getStorageContents()) {
+            if (item == null) continue;
+            if (!item.isSimilar(target)) continue;
+
+            int available = Math.max(maxStackSize - item.getAmount(), 0);
+            int take = Math.min(available, amount);
+
+            if (take > 0) {
+                item.setAmount(item.getAmount() + take);
+                amount -= take;
+            }
+
+            if (amount <= 0) return;
+        }
+
+        // then empty slots
+        for (int i = 0; i < inventory.getSize(); i++) {
+            ItemStack slot = inventory.getItem(i);
+
+            if (slot == null || slot.getType() == Material.AIR) {
+
+                int take = Math.min(maxStackSize, amount);
+
+                ItemStack newStack = target.clone();
+                newStack.setAmount(take);
+
+                inventory.setItem(i, newStack);
+                amount -= take;
+            }
+
+            if (amount <= 0) return;
         }
     }
 }
