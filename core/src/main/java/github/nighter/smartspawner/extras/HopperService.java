@@ -31,7 +31,7 @@ public class HopperService {
 
         long delay = plugin.getTimeFromConfig("hopper.check_delay", "3s");
 
-        this.task = Scheduler.runTaskTimer(this::tick, 40L, delay);
+        this.task = Scheduler.runTaskTimerAsync(this::tick, 40L, delay);
     }
 
     private void tick() {

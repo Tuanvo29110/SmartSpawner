@@ -57,6 +57,9 @@ dependencies {
     annotationProcessor("org.projectlombok:lombok:1.18.42")
 
     implementation("org.bstats:bstats-bukkit:3.1.0")
+
+    compileOnly(files("libs/DonutWorth-1.6.0-release-1.jar"))
+    
 }
 
 tasks.withType<JavaCompile>().configureEach {
